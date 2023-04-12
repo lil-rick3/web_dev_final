@@ -44,4 +44,33 @@ var eventSchema = new mongoose.Schema( {
 
 });
 var Event = mongoose.model('Event', eventSchema);
+function authenticate(req, res, next) {
+  let c = req.cookies;
+  if (c && c.login) {
+    let result = cm.sessions.doesUserHaveSession(c.login.username, c.login.sid);
+    if (result) {
+      next();
+      return;
+    }
+  }
+  res.redirect('/account/index.html');
+}
+
+const app = express();
+app.use(cookieParser());    
+app.use('/app/*', authenticate);
+app.use(express.static('public_html'))
+
+app.use(express.json())
+
+app.use('*', (req, res, next) => {
+  let c = req.cookies;
+  if (c && c.login) {
+    if (cm.sessions.doesUserHaveSession(c.login.username, c.login.sid)) {
+      cm.sessions.addOrUpdateSession(c.login.username);
+    }
+  }
+  next();
+});
+
 
